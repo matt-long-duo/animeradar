@@ -8,15 +8,11 @@ export const STREAMING_PLATFORM_COLORS: Record<string, string> = {
   'amazon prime': 'bg-blue-600',
   'disney+': 'bg-blue-700',
   'tubi': 'bg-pink-500',
-  'youtube': 'bg-red-600'
+  'youtube': 'bg-red-600',
+  'hbo max': 'bg-purple-600',
+  'paramount+': 'bg-blue-800',
+  'peacock': 'bg-indigo-500',
+  'apple tv+': 'bg-gray-800'
 };
 
-export const DEFAULT_PLATFORM_COLOR = 'bg-gray-500';
-
-export const FALLBACK_PLATFORMS = [
-  { name: 'Crunchyroll', url: 'https://crunchyroll.com' },
-  { name: 'Funimation', url: 'https://funimation.com' },
-  { name: 'Netflix', url: 'https://netflix.com' },
-  { name: 'Hulu', url: 'https://hulu.com' },
-  { name: 'Hidive', url: 'https://hidive.com' }
-]; 
+export const DEFAULT_PLATFORM_COLOR = 'bg-gray-500'; 

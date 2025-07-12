@@ -6,33 +6,16 @@ import { STREAMING_PLATFORM_COLORS, DEFAULT_PLATFORM_COLOR } from '../../constan
 
 interface AnimeCardProps {
   anime: Anime;
-  isStreamingDataLoading?: boolean;
 }
 
-const AnimeCard = ({ anime, isStreamingDataLoading = false }: AnimeCardProps) => {
+const AnimeCard = ({ anime }: AnimeCardProps) => {
   const getStreamingPlatformColor = (platform: string) => {
     return STREAMING_PLATFORM_COLORS[platform.toLowerCase()] || DEFAULT_PLATFORM_COLOR;
   };
 
   const renderStreamingSection = () => {
-    if (isStreamingDataLoading) {
-      // Show loading state while streaming data is being fetched
-      return (
-        <div className="mt-3">
-          <div className="flex items-center gap-2 mb-2">
-            <Play className="w-4 h-4 text-anime-primary" />
-            <span className="text-sm font-medium">Streaming on:</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 border-2 border-anime-primary border-t-transparent rounded-full animate-spin"></div>
-            <span className="text-sm text-gray-500">Loading streaming data...</span>
-          </div>
-        </div>
-      );
-    }
-
     if (anime.streaming && anime.streaming.length > 0) {
-      // Show actual streaming platforms (only verified data)
+      // Show real streaming platforms only
       return (
         <div className="mt-3">
           <div className="flex items-center gap-2 mb-2">
@@ -56,19 +39,8 @@ const AnimeCard = ({ anime, isStreamingDataLoading = false }: AnimeCardProps) =>
       );
     }
 
-    // If streaming data has been fetched but no platforms found, show message
-    if (!isStreamingDataLoading && anime.streaming !== undefined) {
-      return (
-        <div className="mt-3">
-          <div className="flex items-center gap-2 mb-2">
-            <Play className="w-4 h-4 text-gray-400" />
-            <span className="text-sm font-medium text-gray-500">No streaming platforms found</span>
-          </div>
-        </div>
-      );
-    }
-
-    // Don't show anything if streaming data hasn't been fetched yet
+    // Don't show anything if no streaming data is available
+    // This is better than showing misleading "no platforms found" message
     return null;
   };
 

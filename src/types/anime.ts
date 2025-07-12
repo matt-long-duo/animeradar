@@ -2,6 +2,12 @@ export interface Anime {
   mal_id: number;
   title: string;
   title_english?: string;
+  title_japanese?: string;
+  title_synonyms?: string[];
+  titles?: Array<{
+    type: string;
+    title: string;
+  }>;
   images: {
     jpg: {
       image_url: string;
@@ -24,6 +30,8 @@ export interface Anime {
   streaming?: Array<{
     name: string;
     url: string;
+    confidence?: 'high' | 'medium' | 'low';
+    source?: string;
   }>;
   broadcast?: {
     day: string;
