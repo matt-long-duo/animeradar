@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Anime, Season } from './types/anime';
 import { animeApiService } from './services/animeApi';
 import SeasonSelector from './components/SeasonSelector';

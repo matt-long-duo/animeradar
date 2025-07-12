@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { Calendar, Star, Play } from 'lucide-react';
 import { Anime } from '../types/anime';
 
@@ -6,7 +6,7 @@ interface AnimeCardProps {
   anime: Anime;
 }
 
-const AnimeCard: React.FC<AnimeCardProps> = ({ anime }) => {
+const AnimeCard = ({ anime }: AnimeCardProps) => {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
