@@ -1,6 +1,5 @@
 import axios from 'axios';
 import { SeasonResponse, Season, Anime } from '../types/anime';
-import { FALLBACK_PLATFORMS } from '../constants/streaming';
 
 const BASE_URL = 'https://api.jikan.moe/v4';
 const KITSU_BASE_URL = 'https://kitsu.io/api/edge';
@@ -35,16 +34,16 @@ class AnimeApiService {
     const url = `${BASE_URL}/seasons/${year}/${season}`;
     const response = await this.makeRequest<SeasonResponse>(url);
     
-    // Phase 1: Return anime with fallback streaming data immediately
-    const animeWithFallback = response.data.map(anime => ({
+    // Phase 1: Return anime WITHOUT streaming data (no misleading information)
+    const animeWithoutStreaming = response.data.map(anime => ({
       ...anime,
-      streaming: this.getFallbackStreamingPlatforms(anime.title)
+      streaming: undefined // No streaming data initially
     }));
     
-    return animeWithFallback;
+    return animeWithoutStreaming;
   }
 
-  // New method for fetching real streaming data in parallel
+  // Enhanced method for fetching real streaming data in parallel
   async enhanceWithRealStreamingData(animeList: Anime[]): Promise<Anime[]> {
     const BATCH_SIZE = 10; // Process 10 anime at a time
     const batches = [];
@@ -62,7 +61,7 @@ class AnimeApiService {
         const streamingData = await this.getStreamingDataFromKitsu(anime.title);
         return {
           ...anime,
-          streaming: streamingData
+          streaming: streamingData.length > 0 ? streamingData : undefined
         };
       });
       
@@ -105,7 +104,8 @@ class AnimeApiService {
       });
       
       if (searchResponse.data.data.length === 0) {
-        return this.getFallbackStreamingPlatforms(animeTitle);
+        // No anime found - return empty array (no misleading data)
+        return [];
       }
       
       // Get streaming links from included data
@@ -114,7 +114,8 @@ class AnimeApiService {
       ) || [];
       
       if (streamingLinks.length === 0) {
-        return this.getFallbackStreamingPlatforms(animeTitle);
+        // No streaming links found - return empty array
+        return [];
       }
       
       // Map streaming links to our format
@@ -123,14 +124,15 @@ class AnimeApiService {
         url: link.attributes.url
       }));
       
-      // Filter out unknown platforms and ensure at least one platform
+      // Filter out unknown platforms
       const validPlatforms = platforms.filter((platform: any) => platform.name !== 'Unknown');
       
-      return validPlatforms.length > 0 ? validPlatforms : this.getFallbackStreamingPlatforms(animeTitle);
+      // Only return valid platforms
+      return validPlatforms;
       
     } catch (error) {
-      // Fail gracefully - don't log every error to avoid spam
-      return this.getFallbackStreamingPlatforms(animeTitle);
+      // Fail gracefully - return empty array (no misleading data)
+      return [];
     }
   }
 
@@ -150,31 +152,6 @@ class AnimeApiService {
     if (hostname.includes('youtube')) return 'YouTube';
     
     return 'Unknown';
-  }
-
-  // Fallback streaming platforms when Kitsu data is unavailable
-  private getFallbackStreamingPlatforms(animeTitle: string): Array<{name: string; url: string}> {
-    // Use title hash for deterministic platform assignment
-    const titleHash = animeTitle.split('').reduce((hash, char) => {
-      const charCode = char.charCodeAt(0);
-      return hash + charCode;
-    }, 0);
-    
-    const platforms = FALLBACK_PLATFORMS;
-    
-    // Return 1-2 platforms based on title hash
-    const primaryPlatform = platforms[titleHash % platforms.length];
-    const result = [primaryPlatform];
-    
-    // Add secondary platform 50% of the time
-    if (titleHash % 2 === 0) {
-      const secondaryPlatform = platforms[(titleHash + 1) % platforms.length];
-      if (secondaryPlatform.name !== primaryPlatform.name) {
-        result.push(secondaryPlatform);
-      }
-    }
-    
-    return result;
   }
 
   getCurrentSeasonInfo(): { season: Season; year: number } {

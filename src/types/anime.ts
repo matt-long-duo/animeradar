@@ -21,7 +21,7 @@ export interface Anime {
     mal_id: number;
     name: string;
   }>;
-  streaming: Array<{
+  streaming?: Array<{
     name: string;
     url: string;
   }>;

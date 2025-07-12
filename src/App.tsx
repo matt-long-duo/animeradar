@@ -107,7 +107,11 @@ function App() {
         {!loading && !error && animeList.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {animeList.map((anime) => (
-              <AnimeCard key={anime.mal_id} anime={anime} />
+              <AnimeCard 
+                key={anime.mal_id} 
+                anime={anime} 
+                isStreamingDataLoading={enhancing}
+              />
             ))}
           </div>
         )}
