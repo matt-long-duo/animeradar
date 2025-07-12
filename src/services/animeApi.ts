@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { SeasonResponse, Season, Anime } from '../types/anime';
+import { FALLBACK_PLATFORMS } from '../constants/streaming';
 
 const BASE_URL = 'https://api.jikan.moe/v4';
 const KITSU_BASE_URL = 'https://kitsu.io/api/edge';
@@ -129,13 +130,7 @@ class AnimeApiService {
       return hash + charCode;
     }, 0);
     
-    const platforms = [
-      { name: 'Crunchyroll', url: 'https://crunchyroll.com' },
-      { name: 'Funimation', url: 'https://funimation.com' },
-      { name: 'Netflix', url: 'https://netflix.com' },
-      { name: 'Hulu', url: 'https://hulu.com' },
-      { name: 'Hidive', url: 'https://hidive.com' }
-    ];
+    const platforms = FALLBACK_PLATFORMS;
     
     // Return 1-2 platforms based on title hash
     const primaryPlatform = platforms[titleHash % platforms.length];

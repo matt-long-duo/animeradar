@@ -1,4 +1,5 @@
-import { Season } from '../types/anime';
+import { Season } from '../../types/anime';
+import { SEASONS } from '../../constants/seasons';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface SeasonSelectorProps {
@@ -12,12 +13,7 @@ const SeasonSelector = ({
   currentYear,
   onSeasonChange
 }: SeasonSelectorProps) => {
-  const seasons: { value: Season; label: string; emoji: string }[] = [
-    { value: 'spring', label: 'Spring', emoji: '🌸' },
-    { value: 'summer', label: 'Summer', emoji: '☀️' },
-    { value: 'fall', label: 'Fall', emoji: '🍂' },
-    { value: 'winter', label: 'Winter', emoji: '❄️' }
-  ];
+  const seasons = SEASONS;
 
   const handleYearChange = (increment: number) => {
     onSeasonChange(currentSeason, currentYear + increment);

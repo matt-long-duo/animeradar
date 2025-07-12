@@ -1,46 +1,16 @@
 
 import { Calendar, Star, Play } from 'lucide-react';
-import { Anime } from '../types/anime';
+import { Anime } from '../../types/anime';
+import { formatDate } from '../../utils/formatters';
+import { STREAMING_PLATFORM_COLORS, DEFAULT_PLATFORM_COLOR } from '../../constants/streaming';
 
 interface AnimeCardProps {
   anime: Anime;
 }
 
 const AnimeCard = ({ anime }: AnimeCardProps) => {
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
-
   const getStreamingPlatformColor = (platform: string) => {
-    switch (platform.toLowerCase()) {
-      case 'crunchyroll':
-        return 'bg-orange-500';
-      case 'funimation':
-        return 'bg-purple-500';
-      case 'netflix':
-        return 'bg-red-500';
-      case 'hulu':
-        return 'bg-green-500';
-      case 'vrv':
-        return 'bg-yellow-500';
-      case 'hidive':
-        return 'bg-blue-500';
-      case 'amazon prime':
-        return 'bg-blue-600';
-      case 'disney+':
-        return 'bg-blue-700';
-      case 'tubi':
-        return 'bg-pink-500';
-      case 'youtube':
-        return 'bg-red-600';
-      default:
-        return 'bg-gray-500';
-    }
+    return STREAMING_PLATFORM_COLORS[platform.toLowerCase()] || DEFAULT_PLATFORM_COLOR;
   };
 
   return (

@@ -1,50 +1,20 @@
-import { useState, useEffect } from 'react';
-import { Anime, Season } from './types/anime';
+import { useState } from 'react';
+import { Season } from './types/anime';
 import { animeApiService } from './services/animeApi';
-import SeasonSelector from './components/SeasonSelector';
-import AnimeCard from './components/AnimeCard';
-import LoadingSpinner from './components/LoadingSpinner';
+import { useAnimeData } from './hooks/useAnimeData';
+import { capitalizeFirstLetter } from './utils/formatters';
+import SeasonSelector from './components/features/SeasonSelector';
+import AnimeCard from './components/features/AnimeCard';
+import LoadingSpinner from './components/ui/LoadingSpinner';
 
 function App() {
-  const [animeList, setAnimeList] = useState<Anime[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  
   // Initialize with current season info to prevent flash of incorrect content
   const { season: initialSeason, year: initialYear } = animeApiService.getCurrentSeasonInfo();
   const [currentSeason, setCurrentSeason] = useState<Season>(initialSeason);
   const [currentYear, setCurrentYear] = useState(initialYear);
 
-  useEffect(() => {
-    fetchAnimeData();
-  }, [currentSeason, currentYear]);
-
-  const fetchAnimeData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await animeApiService.getSeasonalAnime(currentYear, currentSeason);
-      
-      // Remove duplicates based on mal_id
-      const uniqueAnime = data.filter((anime, index, self) => 
-        index === self.findIndex(a => a.mal_id === anime.mal_id)
-      );
-      
-      // Sort by release date ascending
-      const sortedAnime = uniqueAnime.sort((a, b) => {
-        const dateA = new Date(a.aired.from);
-        const dateB = new Date(b.aired.from);
-        return dateA.getTime() - dateB.getTime();
-      });
-      
-      setAnimeList(sortedAnime);
-    } catch (err) {
-      setError('Failed to fetch anime data. Please try again later.');
-      console.error('Error fetching anime data:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Use custom hook for anime data management
+  const { animeList, loading, error, refetch } = useAnimeData(currentSeason, currentYear);
 
   const handleSeasonChange = (season: Season, year: number) => {
     setCurrentSeason(season);
@@ -52,7 +22,7 @@ function App() {
   };
 
   const getSeasonDisplayName = (season: Season) => {
-    return season.charAt(0).toUpperCase() + season.slice(1);
+    return capitalizeFirstLetter(season);
   };
 
   return (
@@ -96,7 +66,7 @@ function App() {
             <p className="font-bold">Error</p>
             <p>{error}</p>
             <button
-              onClick={fetchAnimeData}
+              onClick={refetch}
               className="mt-2 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
             >
               Retry
