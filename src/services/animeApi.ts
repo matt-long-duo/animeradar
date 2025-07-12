@@ -35,18 +35,47 @@ class AnimeApiService {
     const url = `${BASE_URL}/seasons/${year}/${season}`;
     const response = await this.makeRequest<SeasonResponse>(url);
     
-    // Get real streaming data from Kitsu API
-    const animeWithStreaming = await Promise.all(
-      response.data.map(async (anime) => {
+    // Phase 1: Return anime with fallback streaming data immediately
+    const animeWithFallback = response.data.map(anime => ({
+      ...anime,
+      streaming: this.getFallbackStreamingPlatforms(anime.title)
+    }));
+    
+    return animeWithFallback;
+  }
+
+  // New method for fetching real streaming data in parallel
+  async enhanceWithRealStreamingData(animeList: Anime[]): Promise<Anime[]> {
+    const BATCH_SIZE = 10; // Process 10 anime at a time
+    const batches = [];
+    
+    // Split anime into batches
+    for (let i = 0; i < animeList.length; i += BATCH_SIZE) {
+      batches.push(animeList.slice(i, i + BATCH_SIZE));
+    }
+    
+    const enhancedAnime: Anime[] = [];
+    
+    // Process each batch in parallel
+    for (const batch of batches) {
+      const batchPromises = batch.map(async (anime) => {
         const streamingData = await this.getStreamingDataFromKitsu(anime.title);
         return {
           ...anime,
           streaming: streamingData
         };
-      })
-    );
+      });
+      
+      const batchResults = await Promise.all(batchPromises);
+      enhancedAnime.push(...batchResults);
+      
+      // Small delay between batches to be respectful to the API
+      if (batches.indexOf(batch) < batches.length - 1) {
+        await delay(1000);
+      }
+    }
     
-    return animeWithStreaming;
+    return enhancedAnime;
   }
 
   async getCurrentSeason(): Promise<SeasonResponse> {
@@ -62,8 +91,8 @@ class AnimeApiService {
   // Get real streaming data from Kitsu API
   private async getStreamingDataFromKitsu(animeTitle: string): Promise<Array<{name: string; url: string}>> {
     try {
-      // Rate limit for Kitsu API calls
-      await delay(500);
+      // Reduced rate limit for better performance
+      await delay(200);
       
       // Search for anime on Kitsu
       const searchUrl = `${KITSU_BASE_URL}/anime?filter[text]=${encodeURIComponent(animeTitle)}&include=streamingLinks&page[limit]=1`;
@@ -71,7 +100,8 @@ class AnimeApiService {
         headers: {
           'Accept': 'application/vnd.api+json',
           'Content-Type': 'application/vnd.api+json'
-        }
+        },
+        timeout: 5000 // 5 second timeout
       });
       
       if (searchResponse.data.data.length === 0) {
@@ -99,7 +129,7 @@ class AnimeApiService {
       return validPlatforms.length > 0 ? validPlatforms : this.getFallbackStreamingPlatforms(animeTitle);
       
     } catch (error) {
-      console.warn('Failed to fetch streaming data from Kitsu:', error);
+      // Fail gracefully - don't log every error to avoid spam
       return this.getFallbackStreamingPlatforms(animeTitle);
     }
   }

@@ -14,7 +14,7 @@ function App() {
   const [currentYear, setCurrentYear] = useState(initialYear);
 
   // Use custom hook for anime data management
-  const { animeList, loading, error, refetch } = useAnimeData(currentSeason, currentYear);
+  const { animeList, loading, enhancing, enhancementComplete, error, refetch } = useAnimeData(currentSeason, currentYear);
 
   const handleSeasonChange = (season: Season, year: number) => {
     setCurrentSeason(season);
@@ -54,9 +54,31 @@ function App() {
           <h2 className="text-2xl font-bold text-anime-dark">
             {getSeasonDisplayName(currentSeason)} {currentYear}
           </h2>
-          <p className="text-gray-600 mt-2">
-            {animeList.length} anime found
-          </p>
+          {/* Show count when not loading and anime are ready */}
+          {!loading && animeList.length > 0 && (
+            <p className="text-gray-600 mt-2">
+              {animeList.length} anime found
+            </p>
+          )}
+          {/* Enhancement status on its own line */}
+          <div className="mt-1 h-6 flex items-center justify-center">
+            {enhancing && (
+              <div className="flex items-center gap-2 text-sm text-anime-primary">
+                <div className="w-3 h-3 border-2 border-anime-primary border-t-transparent rounded-full animate-spin"></div>
+                <span>Updating streaming data...</span>
+              </div>
+            )}
+            {enhancementComplete && (
+              <div className="flex items-center gap-2 text-sm text-green-600">
+                <div className="w-3 h-3 bg-green-600 rounded-full flex items-center justify-center">
+                  <svg className="w-2 h-2 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <span>Streaming data updated!</span>
+              </div>
+            )}
+          </div>
         </div>
 
         {loading && <LoadingSpinner />}
