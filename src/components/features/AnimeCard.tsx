@@ -73,7 +73,7 @@ const AnimeCard = ({ anime }: AnimeCardProps) => {
         </h3>
         
         <div className="flex items-center gap-2 mb-3 text-sm text-gray-600">
-          <Calendar className="w-4 h-4" />
+          <span className="text-base" title="Japanese broadcast date">🇯🇵</span>
           <span>{formatDate(anime.aired.from)}</span>
         </div>
 
