@@ -1,12 +1,26 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Anime, Season } from '../types/anime';
 import { animeApiService } from '../services/animeApi';
+import { cacheService } from '../services/cacheService';
 
 export const useAnimeData = (currentSeason: Season, currentYear: number) => {
   const [animeList, setAnimeList] = useState<Anime[]>([]);
   const [loading, setLoading] = useState(true);
   const [streamingLoading, setStreamingLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Cleanup expired cache entries on mount
+  useEffect(() => {
+    const cleanupCache = async () => {
+      try {
+        await cacheService.cleanup();
+      } catch (error) {
+        console.error('Cache cleanup failed:', error);
+      }
+    };
+    
+    cleanupCache();
+  }, []);
 
   // Update streaming data for specific anime
   const updateAnimeStreaming = useCallback((malId: number, streamingPlatforms: any[]) => {
@@ -85,6 +99,24 @@ export const useAnimeData = (currentSeason: Season, currentYear: number) => {
     }
   };
 
+  const clearCache = useCallback(async () => {
+    try {
+      await cacheService.clear();
+      console.log('✓ Cache cleared successfully');
+    } catch (error) {
+      console.error('❌ Failed to clear cache:', error);
+    }
+  }, []);
+
+  const getCacheStats = useCallback(async () => {
+    try {
+      return await cacheService.getStats();
+    } catch (error) {
+      console.error('❌ Failed to get cache stats:', error);
+      return { totalEntries: 0, expiredEntries: 0, totalSize: 0 };
+    }
+  }, []);
+
   useEffect(() => {
     fetchAnimeData();
   }, [currentSeason, currentYear]);
@@ -94,6 +126,8 @@ export const useAnimeData = (currentSeason: Season, currentYear: number) => {
     loading,
     streamingLoading,
     error,
-    refetch: fetchAnimeData
+    refetch: fetchAnimeData,
+    clearCache,
+    getCacheStats
   };
 }; 

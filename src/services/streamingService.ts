@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { Anime } from '../types/anime';
+import { cacheService, CacheService } from './cacheService';
 
 export interface StreamingPlatform {
   name: string;
@@ -267,6 +268,17 @@ class StreamingService {
 
     console.log(`🎬 STREAMING SEARCH: "${anime.title_english || anime.title}"`);
 
+    // Check cache first
+    const cacheKey = CacheService.generateKey('streaming-anime', { malId: anime.mal_id });
+    const cachedResult = await cacheService.get<StreamingResult>(cacheKey);
+    
+    if (cachedResult) {
+      console.log(`📦 CACHE HIT: Found cached streaming data for "${anime.title_english || anime.title}"`);
+      return cachedResult;
+    }
+
+    console.log(`📦 CACHE MISS: No cached data found, searching APIs...`);
+
     // Phase 1: Try Kitsu API with all search terms first
     console.log('🔍 Phase 1: Trying Kitsu API (Primary)');
     for (const searchTerm of searchTerms) {
@@ -299,12 +311,17 @@ class StreamingService {
       console.log(`❌ STREAMING FAILED: No platforms found after trying Kitsu and WatchMode APIs`);
     }
 
-    return {
+    const result: StreamingResult = {
       platforms: allPlatforms,
       searchedTerms: searchTerms,
       source: successfulSource || 'None',
       success
     };
+
+    // Cache the result (both successful and failed results to avoid repeated API calls)
+    await cacheService.set(cacheKey, result);
+
+    return result;
   }
 
   private extractPlatformName(url: string): string {

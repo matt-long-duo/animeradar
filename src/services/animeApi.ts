@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { SeasonResponse, Season, Anime } from '../types/anime';
 import { streamingService, StreamingPlatform } from './streamingService';
+import { cacheService, CacheService } from './cacheService';
 
 const BASE_URL = 'https://api.jikan.moe/v4';
 
@@ -58,14 +59,31 @@ class AnimeApiService {
 
   // Fast loading - get anime without streaming data
   async getSeasonalAnimeBasic(year: number, season: Season): Promise<Anime[]> {
+    // Check cache first
+    const cacheKey = CacheService.generateKey('anime-basic', { season, year });
+    const cachedData = await cacheService.get<Anime[]>(cacheKey);
+    
+    if (cachedData) {
+      console.log(`📦 CACHE HIT: Found cached basic anime data for ${season} ${year}`);
+      return cachedData;
+    }
+
+    console.log(`📦 CACHE MISS: Fetching basic anime data for ${season} ${year} from API...`);
+    
     const url = `${BASE_URL}/seasons/${year}/${season}`;
     const response = await this.makeRequest<SeasonResponse>(url);
     
     // Return anime with empty streaming arrays for fast initial load
-    return response.data.map(anime => ({
+    const animeData = response.data.map(anime => ({
       ...anime,
       streaming: []
     }));
+
+    // Cache the basic anime data
+    await cacheService.set(cacheKey, animeData);
+    console.log(`✓ CACHE: Stored basic anime data for ${season} ${year}`);
+
+    return animeData;
   }
 
   // Progressive streaming data loading - no artificial rate limiting, streaming APIs handle their own
