@@ -1,5 +1,5 @@
 
-import { Calendar, Star, Play } from 'lucide-react';
+import { Star, Play } from 'lucide-react';
 import { Anime } from '../../types/anime';
 import { formatDate } from '../../utils/formatters';
 import { STREAMING_PLATFORM_COLORS, DEFAULT_PLATFORM_COLOR } from '../../constants/streaming';
