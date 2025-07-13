@@ -1,23 +1,60 @@
-import { useState } from 'react';
-import { Season } from './types/anime';
+import { useState, useMemo } from 'react';
+import { Season, Anime } from './types/anime';
 import { animeApiService } from './services/animeApi';
 import { useAnimeData } from './hooks/useAnimeData';
 import SeasonSelector from './components/features/SeasonSelector';
 import AnimeCard from './components/features/AnimeCard';
 import LoadingSpinner from './components/ui/LoadingSpinner';
+import SortingControl, { SortBy, SortOrder } from './components/ui/SortingControl';
 
 function App() {
   // Initialize with current season info to prevent flash of incorrect content
   const { season: initialSeason, year: initialYear } = animeApiService.getCurrentSeasonInfo();
   const [currentSeason, setCurrentSeason] = useState<Season>(initialSeason);
   const [currentYear, setCurrentYear] = useState(initialYear);
+  
+  // Sorting state
+  const [sortBy, setSortBy] = useState<SortBy>('releaseDate');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
 
   // Use custom hook for anime data management
-  const { animeList, loading, error, refetch } = useAnimeData(currentSeason, currentYear);
+  const { animeList, loading, streamingLoading, error, refetch } = useAnimeData(currentSeason, currentYear);
+
+  // Sort anime list based on current sorting criteria
+  const sortedAnimeList = useMemo(() => {
+    const sorted = [...animeList].sort((a, b) => {
+      let comparison = 0;
+      
+      switch (sortBy) {
+        case 'name':
+          comparison = a.title.localeCompare(b.title);
+          break;
+        case 'releaseDate':
+          const dateA = new Date(a.aired.from);
+          const dateB = new Date(b.aired.from);
+          comparison = dateA.getTime() - dateB.getTime();
+          break;
+        case 'rating':
+          const scoreA = a.score || 0;
+          const scoreB = b.score || 0;
+          comparison = scoreA - scoreB;
+          break;
+      }
+      
+      return sortOrder === 'desc' ? -comparison : comparison;
+    });
+    
+    return sorted;
+  }, [animeList, sortBy, sortOrder]);
 
   const handleSeasonChange = (season: Season, year: number) => {
     setCurrentSeason(season);
     setCurrentYear(year);
+  };
+
+  const handleSortChange = (newSortBy: SortBy, newSortOrder: SortOrder) => {
+    setSortBy(newSortBy);
+    setSortOrder(newSortOrder);
   };
 
   return (
@@ -45,14 +82,24 @@ function App() {
           onSeasonChange={handleSeasonChange}
         />
 
-        <div className="text-center mb-6">
-          {/* Show count when not loading and anime are ready */}
-          {!loading && animeList.length > 0 && (
-            <p className="text-gray-600 mt-2">
-              {animeList.length} anime found
-            </p>
-          )}
-        </div>
+        {/* Show sorting controls and streaming loading status when anime are ready */}
+        {!loading && animeList.length > 0 && (
+          <div>
+            <SortingControl
+              sortBy={sortBy}
+              sortOrder={sortOrder}
+              onSortChange={handleSortChange}
+              animeCount={animeList.length}
+            />
+            {streamingLoading && (
+              <div className="text-center mb-4">
+                <p className="text-sm text-blue-600">
+                  Loading streaming platforms...
+                </p>
+              </div>
+            )}
+          </div>
+        )}
 
         {loading && <LoadingSpinner />}
 
@@ -79,10 +126,11 @@ function App() {
 
         {!loading && !error && animeList.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {animeList.map((anime) => (
+            {sortedAnimeList.map((anime) => (
               <AnimeCard 
                 key={anime.mal_id} 
                 anime={anime}
+                streamingLoading={streamingLoading}
               />
             ))}
           </div>

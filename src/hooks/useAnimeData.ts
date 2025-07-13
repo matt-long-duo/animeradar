@@ -1,39 +1,88 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Anime, Season } from '../types/anime';
 import { animeApiService } from '../services/animeApi';
 
 export const useAnimeData = (currentSeason: Season, currentYear: number) => {
   const [animeList, setAnimeList] = useState<Anime[]>([]);
   const [loading, setLoading] = useState(true);
+  const [streamingLoading, setStreamingLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Update streaming data for specific anime
+  const updateAnimeStreaming = useCallback((malId: number, streamingPlatforms: any[]) => {
+    setAnimeList(prevList => 
+      prevList.map(anime => 
+        anime.mal_id === malId 
+          ? { ...anime, streaming: streamingPlatforms }
+          : anime
+      )
+    );
+  }, []);
 
   const fetchAnimeData = async () => {
     try {
       setLoading(true);
+      setStreamingLoading(false);
       setError(null);
       
-      // Get anime with streaming data
-      const data = await animeApiService.getSeasonalAnime(currentYear, currentSeason);
+      // Phase 1: Fast load - Get basic anime data without streaming info
+      console.log('Phase 1: Loading basic anime data...');
+      const basicData = await animeApiService.getSeasonalAnimeBasic(currentYear, currentSeason);
       
-      // Remove duplicates based on mal_id
-      const uniqueAnime = data.filter((anime, index, self) => 
+      // Remove duplicates and sort
+      const uniqueAnime = basicData.filter((anime, index, self) => 
         index === self.findIndex(a => a.mal_id === anime.mal_id)
       );
       
-      // Sort by release date ascending
       const sortedAnime = uniqueAnime.sort((a, b) => {
         const dateA = new Date(a.aired.from);
         const dateB = new Date(b.aired.from);
         return dateA.getTime() - dateB.getTime();
       });
       
+      // Set anime list immediately for fast initial render
       setAnimeList(sortedAnime);
       setLoading(false);
+      
+      // Phase 2: Progressive enhancement - Load streaming data with immediate UI updates
+      if (sortedAnime.length > 0) {
+        console.log('Phase 2: Loading streaming data progressively...');
+        setStreamingLoading(true);
+        
+        let completedCount = 0;
+        const totalCount = sortedAnime.length;
+        
+        try {
+          // Use the new progressive method that updates UI immediately as each result comes in
+          await animeApiService.getStreamingDataProgressively(
+            sortedAnime, 
+            10, // batchSize parameter (not used but kept for compatibility)
+            (malId, platforms) => {
+              // This callback is called immediately when each anime's streaming data is ready
+              updateAnimeStreaming(malId, platforms);
+              completedCount++;
+              
+              // Log progress
+              if (completedCount % 5 === 0 || completedCount === totalCount) {
+                console.log(`Streaming data: ${completedCount}/${totalCount} complete`);
+              }
+            }
+          );
+          
+          console.log('All streaming data loaded!');
+        } catch (streamingError) {
+          console.error('Error loading streaming data:', streamingError);
+          // Don't set main error since we already have the anime list
+        } finally {
+          setStreamingLoading(false);
+        }
+      }
       
     } catch (err) {
       setError('Failed to fetch anime data. Please try again later.');
       console.error('Error fetching anime data:', err);
       setLoading(false);
+      setStreamingLoading(false);
     }
   };
 
@@ -44,6 +93,7 @@ export const useAnimeData = (currentSeason: Season, currentYear: number) => {
   return {
     animeList,
     loading,
+    streamingLoading,
     error,
     refetch: fetchAnimeData
   };

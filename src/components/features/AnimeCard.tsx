@@ -6,9 +6,10 @@ import { STREAMING_PLATFORM_COLORS, DEFAULT_PLATFORM_COLOR } from '../../constan
 
 interface AnimeCardProps {
   anime: Anime;
+  streamingLoading?: boolean;
 }
 
-const AnimeCard = ({ anime }: AnimeCardProps) => {
+const AnimeCard = ({ anime, streamingLoading = false }: AnimeCardProps) => {
   const getStreamingPlatformColor = (platform: string) => {
     return STREAMING_PLATFORM_COLORS[platform.toLowerCase()] || DEFAULT_PLATFORM_COLOR;
   };
@@ -39,7 +40,25 @@ const AnimeCard = ({ anime }: AnimeCardProps) => {
       );
     }
 
-    // Don't show anything if no streaming data is available
+    // Show loading state while streaming data is being fetched
+    if (streamingLoading) {
+      return (
+        <div className="mt-3">
+          <div className="flex items-center gap-2 mb-2">
+            <Play className="w-4 h-4 text-gray-400" />
+            <span className="text-sm font-medium text-gray-400">Checking streaming platforms...</span>
+          </div>
+          <div className="flex gap-2">
+            {/* Loading skeleton for streaming platforms */}
+            <div className="h-6 w-16 bg-gray-200 rounded-full animate-pulse"></div>
+            <div className="h-6 w-20 bg-gray-200 rounded-full animate-pulse"></div>
+            <div className="h-6 w-18 bg-gray-200 rounded-full animate-pulse"></div>
+          </div>
+        </div>
+      );
+    }
+
+    // Don't show anything if no streaming data is available and not loading
     // This is better than showing misleading "no platforms found" message
     return null;
   };

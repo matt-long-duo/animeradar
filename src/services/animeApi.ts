@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { SeasonResponse, Season, Anime } from '../types/anime';
-import { streamingService } from './streamingService';
+import { streamingService, StreamingPlatform } from './streamingService';
 
 const BASE_URL = 'https://api.jikan.moe/v4';
 
@@ -9,7 +9,7 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 class AnimeApiService {
   private lastRequestTime = 0;
-  private readonly rateLimitDelay = 1000; // 1 second between requests
+  private readonly rateLimitDelay = 1000; // 1 second between requests for Jikan API only
 
   private async makeRequest<T>(url: string): Promise<T> {
     const now = Date.now();
@@ -56,26 +56,87 @@ class AnimeApiService {
     return animeWithStreaming;
   }
 
-  async getCurrentSeason(): Promise<SeasonResponse> {
-    const url = `${BASE_URL}/seasons/now`;
-    return this.makeRequest<SeasonResponse>(url);
+  // Fast loading - get anime without streaming data
+  async getSeasonalAnimeBasic(year: number, season: Season): Promise<Anime[]> {
+    const url = `${BASE_URL}/seasons/${year}/${season}`;
+    const response = await this.makeRequest<SeasonResponse>(url);
+    
+    // Return anime with empty streaming arrays for fast initial load
+    return response.data.map(anime => ({
+      ...anime,
+      streaming: []
+    }));
+  }
+
+  // Progressive streaming data loading - no artificial rate limiting, streaming APIs handle their own
+  async getStreamingDataProgressively(
+    animeList: Anime[], 
+    batchSize: number = 10,
+    onBatchComplete: (malId: number, platforms: StreamingPlatform[]) => void
+  ): Promise<void> {
+    // Process all anime in parallel, but call onBatchComplete as each one finishes
+    const streamingPromises = animeList.map(async (anime) => {
+      try {
+        const streamingResult = await streamingService.findStreamingPlatforms(anime);
+        const platforms = streamingResult.platforms || [];
+        onBatchComplete(anime.mal_id, platforms);
+        return { malId: anime.mal_id, platforms };
+      } catch (error) {
+        console.error(`Failed to get streaming data for ${anime.title}:`, error);
+        onBatchComplete(anime.mal_id, []);
+        return { malId: anime.mal_id, platforms: [] };
+      }
+    });
+
+    // Wait for all to complete
+    await Promise.all(streamingPromises);
+  }
+
+  // Batch process streaming data for multiple anime (legacy method)
+  async batchGetStreamingData(animeList: Anime[], batchSize: number = 5): Promise<Map<number, StreamingPlatform[]>> {
+    const streamingMap = new Map<number, StreamingPlatform[]>();
+    
+    // Process all in parallel - streaming APIs have their own rate limiting
+    const batchResults = await Promise.all(
+      animeList.map(async (anime) => {
+        try {
+          const streamingResult = await streamingService.findStreamingPlatforms(anime);
+          return { malId: anime.mal_id, platforms: streamingResult.platforms || [] };
+        } catch (error) {
+          console.error(`Failed to get streaming data for ${anime.title}:`, error);
+          return { malId: anime.mal_id, platforms: [] };
+        }
+      })
+    );
+    
+    // Add results to map
+    batchResults.forEach(result => {
+      streamingMap.set(result.malId, result.platforms);
+    });
+    
+    return streamingMap;
   }
 
   async getUpcomingSeason(): Promise<SeasonResponse> {
     const url = `${BASE_URL}/seasons/upcoming`;
-    return this.makeRequest<SeasonResponse>(url);
+    return await this.makeRequest<SeasonResponse>(url);
   }
 
   getCurrentSeasonInfo(): { season: Season; year: number } {
     const now = new Date();
-    const month = now.getMonth(); // 0-11
     const year = now.getFullYear();
+    const month = now.getMonth() + 1;
     
     let season: Season;
-    if (month >= 2 && month <= 4) season = 'spring';
-    else if (month >= 5 && month <= 7) season = 'summer';
-    else if (month >= 8 && month <= 10) season = 'fall';
-    else season = 'winter';
+    if (month >= 1 && month <= 3) {
+      season = 'winter';
+    } else if (month >= 4 && month <= 6) {
+      season = 'spring';
+    } else if (month >= 7 && month <= 9) {
+      season = 'summer';
+    } else {
+      season = 'fall';
+    }
     
     return { season, year };
   }
