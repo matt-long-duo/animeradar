@@ -56,7 +56,6 @@ export const useAnimeData = (currentSeason: Season, currentYear: number) => {
           // Use the new progressive method that updates UI immediately as each result comes in
           await animeApiService.getStreamingDataProgressively(
             sortedAnime, 
-            10, // batchSize parameter (not used but kept for compatibility)
             (malId, platforms) => {
               // This callback is called immediately when each anime's streaming data is ready
               updateAnimeStreaming(malId, platforms);

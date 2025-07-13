@@ -71,7 +71,6 @@ class AnimeApiService {
   // Progressive streaming data loading - no artificial rate limiting, streaming APIs handle their own
   async getStreamingDataProgressively(
     animeList: Anime[], 
-    batchSize: number = 10,
     onBatchComplete: (malId: number, platforms: StreamingPlatform[]) => void
   ): Promise<void> {
     // Process all anime in parallel, but call onBatchComplete as each one finishes
@@ -93,7 +92,7 @@ class AnimeApiService {
   }
 
   // Batch process streaming data for multiple anime (legacy method)
-  async batchGetStreamingData(animeList: Anime[], batchSize: number = 5): Promise<Map<number, StreamingPlatform[]>> {
+  async batchGetStreamingData(animeList: Anime[]): Promise<Map<number, StreamingPlatform[]>> {
     const streamingMap = new Map<number, StreamingPlatform[]>();
     
     // Process all in parallel - streaming APIs have their own rate limiting

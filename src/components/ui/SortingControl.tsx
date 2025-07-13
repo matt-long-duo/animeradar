@@ -7,14 +7,12 @@ interface SortingControlProps {
   sortBy: SortBy;
   sortOrder: SortOrder;
   onSortChange: (sortBy: SortBy, sortOrder: SortOrder) => void;
-  animeCount: number;
 }
 
 const SortingControl: React.FC<SortingControlProps> = ({
   sortBy,
   sortOrder,
-  onSortChange,
-  animeCount
+  onSortChange
 }) => {
   const handleSortByChange = (newSortBy: SortBy) => {
     // If same sort field, toggle order; otherwise use ascending

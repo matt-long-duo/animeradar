@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Season, Anime } from './types/anime';
+import { Season } from './types/anime';
 import { animeApiService } from './services/animeApi';
 import { useAnimeData } from './hooks/useAnimeData';
 import SeasonSelector from './components/features/SeasonSelector';
@@ -89,7 +89,6 @@ function App() {
               sortBy={sortBy}
               sortOrder={sortOrder}
               onSortChange={handleSortChange}
-              animeCount={animeList.length}
             />
             {streamingLoading && (
               <div className="text-center mb-4">
