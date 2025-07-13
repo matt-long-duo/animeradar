@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Season } from './types/anime';
 import { animeApiService } from './services/animeApi';
 import { useAnimeData } from './hooks/useAnimeData';
-import { capitalizeFirstLetter } from './utils/formatters';
 import SeasonSelector from './components/features/SeasonSelector';
 import AnimeCard from './components/features/AnimeCard';
 import LoadingSpinner from './components/ui/LoadingSpinner';
@@ -19,10 +18,6 @@ function App() {
   const handleSeasonChange = (season: Season, year: number) => {
     setCurrentSeason(season);
     setCurrentYear(year);
-  };
-
-  const getSeasonDisplayName = (season: Season) => {
-    return capitalizeFirstLetter(season);
   };
 
   return (
@@ -51,9 +46,6 @@ function App() {
         />
 
         <div className="text-center mb-6">
-          <h2 className="text-2xl font-bold text-anime-dark">
-            {getSeasonDisplayName(currentSeason)} {currentYear}
-          </h2>
           {/* Show count when not loading and anime are ready */}
           {!loading && animeList.length > 0 && (
             <p className="text-gray-600 mt-2">
@@ -80,7 +72,7 @@ function App() {
         {!loading && !error && animeList.length === 0 && (
           <div className="text-center py-12">
             <p className="text-gray-600 text-lg">
-              No anime found for {getSeasonDisplayName(currentSeason)} {currentYear}
+              No anime found
             </p>
           </div>
         )}
