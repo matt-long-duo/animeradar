@@ -27,7 +27,9 @@ function App() {
       
       switch (sortBy) {
         case 'name':
-          comparison = a.title.localeCompare(b.title);
+          const titleA = a.title_english || a.title;
+          const titleB = b.title_english || b.title;
+          comparison = titleA.localeCompare(titleB);
           break;
         case 'releaseDate':
           const dateA = new Date(a.aired.from);
